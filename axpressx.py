@@ -23,42 +23,33 @@ import re
 
 import os
 openai.api_key = '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'
-
-# Define the URL of the XML file
+ 
 url = "https://pib.gov.in/RssMain.aspx?ModId=6&Lang=1&Regid=3"
-
-# Send an HTTP GET request to the URL and get the response
+ 
 response = requests.get(url)
-
-# Check if the request was successful
+ 
 if response.status_code == 200:
-    # Parse the XML content
+   
     root = ET.fromstring(response.content)
-
-    # Find all 'link' elements under 'item'
+ 
     link_elements = root.findall(".//item/link")
-
-    # Check if there are at least two 'link' elements
+ 
     if len(link_elements) >= 1:
-        # Extract the URL from the second 'link' element
+ 
         second_link_element = link_elements[6]  # Index 1 for the second element
         second_link = second_link_element.text
         print(second_link)
-        # Send an HTTP GET request to the second link and get the content
+        
         link_response = requests.get(second_link)
-
-        # Check if the request to the second link was successful
+ 
         if link_response.status_code == 200:
-            # Parse the HTML content using BeautifulSoup
+ 
             soup = BeautifulSoup(link_response.text, 'html.parser')
-
-            # Extract the text from the HTML
+ 
             text_content = soup.get_text()
-
-            # Remove extra spaces and gaps
+ 
             content = ' '.join(text_content.split())
-
-            # Save the cleaned text content to a text file
+ 
             with open("content.txt", "w", encoding="utf-8") as file:
                 file.write(content)
             print(f"Cleaned content from the second link saved as 'content.txt'")
@@ -86,41 +77,34 @@ def main():
         import requests
         from bs4 import BeautifulSoup
         from urllib.parse import urlparse, urljoin
-
-        # URL of the webpage containing the images
+ 
         url = f"{second_link}"
-
-        # Send an HTTP GET request to the URL
+ 
         response = requests.get(url)
-
-        # Check if the request was successful
+ 
         if response.status_code == 200:
             # Parse the HTML content of the page
             soup = BeautifulSoup(response.content, "html.parser")
             
             # Find all image tags on the page
             img_tags = soup.find_all("img")
-            
-            # Create a directory to save the images
+             
             os.makedirs(f"{top}", exist_ok=True)
-            
-            # Download each image whose file name starts with "image"
+ 
             for img_tag in img_tags:
                 img_url = img_tag.get("src")
                 if img_url:
-                    img_url = urljoin(url, img_url)  # Make sure the URL is absolute
+                    img_url = urljoin(url, img_url) 
                     img_name = os.path.basename(urlparse(img_url).path)
                     
                     # Check if the file name starts with "image"
                     if img_name.startswith("image"):
                         img_path = os.path.join(f"{top}", img_name)
-                        
-                        # Send an HTTP GET request to the image URL
+                      
                         img_response = requests.get(img_url)
-                        
-                        # Check if the request was successful
+                         
                         if img_response.status_code == 200:
-                            # Save the image to the directory
+                   
                             with open(img_path, "wb") as img_file:
                                 img_file.write(img_response.content)
                             print(f"Downloaded: {img_path}")
@@ -131,10 +115,10 @@ def main():
 
         # cop = input("You: ")
 
-    # Read the content from the text file
+ 
         with open('content.txt', 'r', encoding='utf-8') as file:
             content = file.read()
-        # Make a request to the GPT-3.5 Turbo model
+    
         response = openai.ChatCompletion.create(
             model="gpt-3.5-turbo",
             # model="davinci-002",
@@ -227,75 +211,60 @@ def main():
         #     print("Invalid option entered. Please enter either 1 or 2.")
 
         import os
-
-        # Change this to your actual image directory
-        IMAGE_DIR = f'{top}'
-
-        # Get a list of image files in the specified directory
+ 
+        IMAGE_DIR = f'{top}' 
         IMAGE_PATHS = [os.path.join(IMAGE_DIR, filename) for filename in os.listdir(IMAGE_DIR) if filename.startswith('image') and filename.endswith(('.jpg', '.png', '.jpeg'))]
 
         num_images = len(IMAGE_PATHS)
         audio_clip = AudioFileClip(MUSIC_PATH)
         audio_duration = audio_clip.duration
         IMAGE_DURATION = audio_duration / num_images
-
-        # Create a list of video clips
-        # Set the blur amount
-        # Create a list of video clips
+ 
         video_clips = []
         for image_path in IMAGE_PATHS:
-            # Create an image clip for the current image
+        
             image_clip = ImageClip(image_path)
-            # Calculate the new height based on the aspect ratio of the original image
+        
             new_height = int(
                 VIDEO_WIDTH / image_clip.w * image_clip.h)
-            # Resize the image to fit the video dimensions without black bars
+           
             image_clip = image_clip.resize(
                 (VIDEO_WIDTH, new_height))
             image_clip = image_clip.set_position(
                 ("center", "center"))
             image_clip = image_clip.set_duration(IMAGE_DURATION)
 
-            # Create a black background clip
+          
             bg_clip = ColorClip(
                 (VIDEO_WIDTH, VIDEO_HEIGHT), color=(0, 0, 0))
             bg_clip = bg_clip.set_duration(IMAGE_DURATION)
 
-            # Combine the image clip with the background clip
+         
             video_clip = CompositeVideoClip([bg_clip, image_clip])
-
-            # Append the video clip to the list
+ 
             video_clips.append(video_clip)
 
-            # Concatenate the video clips in a loop until the audio ends
-
-        # Concatenate the video clips in a loop until the audio ends
-         # Concatenate the video clips in a loop until the audio ends
+          
         audio_clip = AudioFileClip(MUSIC_PATH)
         audio_duration = audio_clip.duration
         final_clip = concatenate_videoclips(
             video_clips, method="compose", bg_color=(0, 0, 0))
         final_clip = final_clip.set_duration(
             audio_duration).loop(duration=audio_duration)
-
-        # Set the audio file for the final video clip
+ 
         final_clip = final_clip.set_audio(
             audio_clip.set_duration(final_clip.duration))
-
-        # Set the audio file for the final video clip
-        # Set the desired output file name
+ 
         filename = f"{fish}.mp4"
-
-        # Check if the file already exists
+ 
         if os.path.isfile(filename):
-            # If it does, add a number to the filename to create a unique name
+         
             basename, extension = os.path.splitext(filename)
             i = 1
             while os.path.isfile(f"{basename}_{i}{extension}"):
                 i += 1
             filename = f"{basename}_{i}{extension}"
-
-            # Write the video file with the updated filename
+ 
         final_clip.write_videofile(filename, fps=30)
 
         FONT = "Muroslant.otf"
